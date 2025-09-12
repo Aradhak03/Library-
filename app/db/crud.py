@@ -10,6 +10,11 @@ class CRUD:
         return result.scalars().first()
 
     @staticmethod
+    async def get_by_field(db: AsyncSession, model: Type, field: str, value: Any):
+        result = await db.execute(select(model).filter(getattr(model, field) == value))
+        return result.scalars().first()
+
+    @staticmethod
     async def get_all(db: AsyncSession, model: Type):
         result = await db.execute(select(model))
         return result.scalars().all()
@@ -28,6 +33,7 @@ class CRUD:
             sqlalchemy_update(model).where(model.id == obj_id).values(**obj_in)
         )
         await db.commit()
+        # Return the updated object
         return await CRUD.get_by_id(db, model, obj_id)
 
     @staticmethod

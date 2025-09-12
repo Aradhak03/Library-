@@ -18,7 +18,7 @@ class SeatRead(BaseModel):
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.post("/", response_model=SeatRead, status_code=status.HTTP_201_CREATED)
 async def create_seat(seat: SeatCreate, db: AsyncSession = Depends(get_db)):
