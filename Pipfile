@@ -10,6 +10,7 @@ asyncpg = "*"
 python-dotenv = "*"
 fastapi = {extras = ["all"], version = "*"}
 greenlet = "*"
+python-dateutil = "*"
 
 [dev-packages]
 
