@@ -18,7 +18,7 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 # Pydantic Schemas
 # ──────────────────────────────────────────────
 
-class BookingCreate(BaseModel):
+class BookingBase(BaseModel):
     seat_id: int
     student_id: int
     subscription_start_date: date  # When the subscription starts
@@ -26,7 +26,9 @@ class BookingCreate(BaseModel):
     daily_end_time: Optional[time] = None           # Optional if 24h reservation
     is_24_hour_reservation: bool = False  # Whether this is a 24-hour reservation
     notes: Optional[str] = None
-    
+
+
+class BookingCreate(BookingBase):
     @model_validator(mode='after')
     def validate_start_date(self):
         if self.subscription_start_date < date.today():
@@ -49,10 +51,10 @@ class BookingCreate(BaseModel):
                 raise ValueError('daily_start_time and daily_end_time cannot be the same')
         return self
 
-class BookingRead(BookingCreate):
+
+class BookingRead(BookingBase):
     id: int
     is_active: bool
-    notes: Optional[str] = None
     created_at: datetime
 
     class Config:

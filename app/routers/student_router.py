@@ -30,7 +30,7 @@ class StudentRead(BaseModel):
     id: int
     name: str
     mobile_number: str
-    registered_at: datetime
+    registered_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -43,10 +43,10 @@ class ActiveBookingInfo(BaseModel):
     seat_number: int
     subscription_start_date: date
     is_24_hour_reservation: bool
-    daily_start_time: Optional[time]
-    daily_end_time: Optional[time]
-    notes: Optional[str]
-    created_at: datetime
+    daily_start_time: Optional[time] = None
+    daily_end_time: Optional[time] = None
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
 
 
 class PaymentInfo(BaseModel):
@@ -55,11 +55,11 @@ class PaymentInfo(BaseModel):
     amount: float
     payment_date: date
     payment_type: str
-    period_start: Optional[date]
-    period_end: Optional[date]
-    is_adjustment: bool
-    note: Optional[str]
-    created_at: datetime
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
+    is_adjustment: bool = False
+    note: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -70,9 +70,9 @@ class StudentDetail(BaseModel):
     id: int
     name: str
     mobile_number: str
-    registered_at: datetime
-    active_booking: Optional[ActiveBookingInfo]
-    payment_history: List[PaymentInfo]
+    registered_at: Optional[datetime] = None
+    active_booking: Optional[ActiveBookingInfo] = None
+    payment_history: List[PaymentInfo] = []
 
 
 # ──────────────────────────────────────────────
