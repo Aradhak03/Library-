@@ -58,25 +58,31 @@ class PaymentManager:
     async def get_pending_students(db: AsyncSession) -> List[Dict[str, Any]]:
         """
         Get students with pending payments using anniversary-based billing.
-        Returns students who have overdue payments with details about the unpaid period.
+        Only looks at regular payments (is_adjustment = false) to determine last_paid_until.
+        Returns seat number for the dashboard overdue table.
         """
         query = text("""
             WITH active_bookings AS (
                 SELECT 
                     b.id as booking_id,
                     b.student_id,
+                    b.seat_id,
                     s.name as student_name,
+                    seats.number as seat_number,
                     b.subscription_start_date,
                     COALESCE(MAX(p.period_end), b.subscription_start_date) as last_paid_until
                 FROM bookings b
                 JOIN students s ON b.student_id = s.id
-                LEFT JOIN payments p ON b.id = p.booking_id
+                JOIN seats ON b.seat_id = seats.id
+                LEFT JOIN payments p ON b.id = p.booking_id AND p.is_adjustment = false
                 WHERE b.is_active = true
-                GROUP BY b.id, b.student_id, s.name, b.subscription_start_date
+                GROUP BY b.id, b.student_id, b.seat_id, s.name, seats.number, b.subscription_start_date
             )
             SELECT 
                 student_id,
                 student_name,
+                seat_number,
+                booking_id,
                 last_paid_until,
                 CURRENT_DATE - last_paid_until as days_overdue
             FROM active_bookings
@@ -91,6 +97,8 @@ class PaymentManager:
             {
                 "student_id": row.student_id,
                 "student_name": row.student_name,
+                "seat_number": row.seat_number,
+                "booking_id": row.booking_id,
                 "last_paid_until": row.last_paid_until.isoformat(),
                 "days_overdue": row.days_overdue
             }
@@ -213,26 +221,31 @@ class PaymentManager:
     async def get_next_period_start(db: AsyncSession, booking_id: int) -> date:
         """
         Calculate the next available period_start date for a booking.
-        Returns the booking's subscription_start_date if no payments exist,
-        otherwise returns the period_end of the latest payment.
+        Returns the booking's subscription_start_date if no regular payments exist,
+        otherwise returns the period_end of the latest regular payment.
+        Adjustment payments (is_adjustment=True) are excluded — they don't affect
+        the billing cycle.
         """
         booking = await CRUD.get_by_id(db, Booking, booking_id)
         if not booking:
             raise ValueError(f"Booking {booking_id} not found")
-        
-        # Get the latest payment for this booking
+
+        # Only look at regular payments (not adjustments) to find last period_end
         result = await db.execute(
             select(Payment)
-            .filter(Payment.booking_id == booking_id)
+            .filter(
+                Payment.booking_id == booking_id,
+                Payment.is_adjustment == False  # noqa: E712
+            )
             .order_by(Payment.period_end.desc())
             .limit(1)
         )
         latest_payment = result.scalars().first()
-        
+
         if latest_payment:
-            # Next period starts where the latest payment ends
+            # Next period starts where the latest regular payment ends
             return latest_payment.period_end
         else:
-            # No payments yet, start from booking's subscription start date
+            # No regular payments yet, start from booking's subscription start date
             return booking.subscription_start_date
 

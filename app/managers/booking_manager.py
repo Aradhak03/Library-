@@ -48,15 +48,27 @@ class BookingManager:
         return result.scalars().first()
 
     @staticmethod
-    async def check_seat_time_conflict(db: AsyncSession, seat_id: int, daily_start_time: Optional[time], daily_end_time: Optional[time], is_24_hour_reservation: bool = False) -> bool:
-        """Check if there's a time conflict for the seat during the subscription period"""
-        # Get all active bookings for this seat (regardless of when they started)
-        result = await db.execute(
-            select(Booking).filter(
-                Booking.seat_id == seat_id,
-                Booking.is_active == True
-            )
+    async def check_seat_time_conflict(
+        db: AsyncSession,
+        seat_id: int,
+        daily_start_time: Optional[time],
+        daily_end_time: Optional[time],
+        is_24_hour_reservation: bool = False,
+        exclude_booking_id: Optional[int] = None
+    ) -> bool:
+        """Check if there's a time conflict for the seat.
+        exclude_booking_id: if provided, that booking is ignored during conflict check.
+        Used by change-slot so a student can modify their own booking hours
+        without triggering a self-conflict."""
+        # Get all active bookings for this seat, optionally excluding one booking
+        query = select(Booking).filter(
+            Booking.seat_id == seat_id,
+            Booking.is_active == True  # noqa: E712
         )
+        if exclude_booking_id is not None:
+            query = query.filter(Booking.id != exclude_booking_id)
+
+        result = await db.execute(query)
         existing_bookings = result.scalars().all()
         
         # Check if any existing booking has overlapping daily time slots

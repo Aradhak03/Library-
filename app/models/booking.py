@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, Date, Boolean, CheckConstraint, Time
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Date, Boolean, CheckConstraint, Time, String
 from datetime import datetime
 from app.db.database import Base
 
@@ -12,6 +12,7 @@ class Booking(Base):
     daily_end_time = Column(Time, nullable=True)           # Daily end time (optional for 24h)
     is_active = Column(Boolean, default=True)               # Whether subscription is active
     is_24_hour_reservation = Column(Boolean, default=False) # Whether this is a 24-hour reservation
+    notes = Column(String, nullable=True)                   # Admin scratch pad (e.g. "Wants to switch to 6hrs from next month")
     created_at = Column(DateTime, default=lambda: datetime.now())
     
     __table_args__ = (
